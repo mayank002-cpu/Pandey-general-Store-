@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sharma Kirana & Fresh Veg — Fresh & Trusted</title>
+
+  <!-- Firebase (compat CDN - easy to paste) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+
+  <!-- Tesseract.js for in-browser OCR -->
+  <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+
+  <style>
+    /* ---------- Minimal Prestige design (mobile-first) ---------- */
+    :root{
+      --bg:#fbfbf7;
+      --card:#ffffff;
+      --accent:#12623a;
+      --accent-soft:#cdf7df;
+      --muted:#6b7280;
+      --radius:14px;
+      --shadow: 0 10px 30px rgba(2,6,23,0.06);
+      --gold:#f7d08a;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; margin:0;background:linear-gradient(180deg,var(--bg),#f0fbf6); color:#0b1720}
+    .wrap{max-width:1100px;margin:14px auto;padding:14px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{
+      width:64px;height:64px;border-radius:14px;
+      background:linear-gradient(135deg,#22c55e,#facc15);
+      display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:20px;box-shadow:var(--shadow)
+    }
+    .title h1{margin:0;font-size:1.15rem}
+    .title p{margin:0;color:var(--muted);font-size:0.85rem}
+
+    .hero{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+    .hero-card{background:var(--card);padding:14px;border-radius:16px;box-shadow:var(--shadow)}
+    .hero-grid{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .hero-left h2{margin:0;font-size:1.4rem}
+    .lead{color:var(--muted);margin-top:6px}
+    .btn{background:var(--accent);color:white;padding:10px 14px;border-radius:12px;border:none;cursor:pointer;font-weight:700}
+    .btn-ghost{background:transparent;border:1px solid #e8f5ee;color:var(--accent);padding:8px 12px;border-radius:12px}
+
+    /* product grid */
+    .card{margin-top:12px;background:var(--card);padding:12px;border-radius:12px;box-shadow:var(--shadow)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:12px}
+    .product{background:#fff;border-radius:12px;border:1px solid #eef6f0;padding:8px;display:flex;flex-direction:column}
+    .product img{width:100%;height:120px;object-fit:cover;border-radius:8px}
+    .p-body{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px}
+    .names{display:flex;flex-direction:column}
+    .ename{font-weight:700}
+    .hindi{font-size:0.85rem;color:#16663a}
+    .price{font-weight:800;color:#0b5b2f}
+
+    /* admin panel */
+    .admin-row{display:flex;flex-direction:column;gap:8px}
+    .input, textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #e6efea}
+    label{font-weight:700;font-size:0.9rem;margin-top:8px}
+    .small{font-size:0.86rem;color:var(--muted)}
+    .upload-preview{max-width:280px;height:160px;object-fit:cover;border-radius:8px;border:1px solid #eee}
+
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:0.9rem}
+
+    @media(min-width:880px){
+      .hero{grid-template-columns:1fr 420px}
+      .hero-left{padding-right:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">GT</div>
+        <div class="title">
+          <h1>Sharma Kirana &amp; Fresh Veg</h1>
+          <p>सब्ज़ी • किराना • Fresh daily produce</p>
+        </div>
+      </div>
+
+      <nav>
+        <button id="openAdminBtn" class="btn-ghost">Owner Login</button>
+      </nav>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-card">
+        <div class="hero-grid">
+          <div class="hero-left">
+            <h2>Fresh vegetables & grocery — local, trusted</h2>
+            <p class="lead">Daily fresh stock, honest prices. Visit the shop or call/WhatsApp to order. Prices update live.</p>
+            <div style="margin-top:10px">
+              <a class="btn" href="#grid">Browse Products</a>
+              <a class="btn-ghost" style="margin-left:8px" id="waOrder">Order on WhatsApp</a>
+            </div>
+            <p class="small" style="margin-top:10px">Open • Mon–Sat • 9:00–8:00</p>
+          </div>
+
+          <div class="hero-right">
+            <!-- Sample hero image placeholder: you can replace this with your uploaded shop photo.
+                 Uploaded sample path (in this environment): /mnt/data/index.html
+                 Replace src below with the final image URL or upload via admin panel. -->
+            <img id="heroImg" style="width:100%;height:220px;object-fit:cover;border-radius:12px" src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=9f7ef88e33f53415d3355d1b9a2f9e32" alt="fresh vegetables">
+          </div>
+        </div>
+      </div>
+
+      <!-- product grid -->
+      <div id="grid" class="card">
+        <h3>Products • उत्पाद</h3>
+        <div id="products" class="grid">
+          <!-- product cards go here -->
+        </div>
+        <p id="noProducts" class="small" style="display:none">No products yet. Owner should add items from admin panel.</p>
+      </div>
+
+      <!-- Admin panel modal / block -->
+      <div id="adminPanel" class="card" style="display:none">
+        <h3>Owner Admin • मालिक</h3>
+
+        <div id="authSection" class="admin-row">
+          <label>Email (owner)</label>
+          <input id="adminEmail" class="input" type="email" placeholder="owner@example.com" />
+          <label>Password</label>
+          <input id="adminPassword" class="input" type="password" placeholder="password" />
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button id="loginBtn" class="btn">Login</button>
+            <button id="createBtn" class="btn-ghost">Create Admin (one-time)</button>
+            <button id="closeAdmin" class="btn-ghost">Close</button>
+          </div>
+          <div id="authMsg" class="small"></div>
+        </div>
+
+        <hr />
+
+        <div id="ownerTools" style="display:none">
+          <p class="small">Logged in as <strong id="ownerEmailDisplay"></strong></p>
+
+          <!-- Upload & OCR -->
+          <label>Upload product image</label>
+          <input id="imageInput" type="file" accept="image/*" class="input" />
+          <div style="display:flex;gap:12px;margin-top:8px;align-items:center">
+            <img id="preview" class="upload-preview" alt="preview" src="" style="display:none" />
+            <div style="flex:1">
+              <label class="small">Detected OCR text (edit if needed)</label>
+              <textarea id="ocrText" class="input" rows="3" placeholder="Detected text appears here"></textarea>
+            </div>
+          </div>
+
+          <label>English name</label>
+          <input id="nameEn" class="input" placeholder="Onion, Tomato ..." />
+          <label>Hindi name (देवनागरी)</label>
+          <input id="nameHi" class="input" placeholder="प्याज, टमाटर ..." />
+          <label>Price (₹)</label>
+          <input id="price" class="input" placeholder="e.g., 40 or 65.50" />
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="saveProduct" class="btn">Upload & Save Product</button>
+            <button id="refreshProducts" class="btn-ghost">Refresh</button>
+          </div>
+          <div id="ownerMsg" class="small" style="margin-top:8px"></div>
+
+          <hr />
+
+          <h4>Existing products (edit price)</h4>
+          <div id="manageList" style="display:grid;gap:8px"></div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      © <span id="year"></span> Sharma Kirana &amp; Fresh Veg — Built with care • Live prices via Firebase
+    </footer>
+  </div>
+
+  <script>
+  /***************  CONFIGURE FIREBASE HERE  *****************
+   * 1) Create Firebase project: https://console.firebase.google.com
+   * 2) Enable Firestore (native mode), Storage, and Auth (Email/Password)
+   * 3) Replace below config object with your project's config
+   **********************************************************/
+  const FIREBASE_CONFIG = {
+    apiKey: "REPLACE_API_KEY",
+    authDomain: "REPLACE_PROJECT.firebaseapp.com",
+    projectId: "REPLACE_PROJECT",
+    storageBucket: "REPLACE_PROJECT.appspot.com",
+    messagingSenderId: "REPLACE_SENDER_ID",
+    appId: "REPLACE_APP_ID"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  // UI elements
+  const openAdminBtn = document.getElementById('openAdminBtn');
+  const adminPanel = document.getElementById('adminPanel');
+  const closeAdmin = document.getElementById('closeAdmin');
+  const loginBtn = document.getElementById('loginBtn');
+  const createBtn = document.getElementById('createBtn');
+  const adminEmail = document.getElementById('adminEmail');
+  const adminPassword = document.getElementById('adminPassword');
+  const authMsg = document.getElementById('authMsg');
+  const ownerTools = document.getElementById('ownerTools');
+  const ownerEmailDisplay = document.getElementById('ownerEmailDisplay');
+  const imageInput = document.getElementById('imageInput');
+  const preview = document.getElementById('preview');
+  const ocrText = document.getElementById('ocrText');
+  const nameEn = document.getElementById('nameEn');
+  const nameHi = document.getElementById('nameHi');
+  const price = document.getElementById('price');
+  const saveProduct = document.getElementById('saveProduct');
+  const ownerMsg = document.getElementById('ownerMsg');
+  const productsDiv = document.getElementById('products');
+  const noProducts = document.getElementById('noProducts');
+  const manageList = document.getElementById('manageList');
+  const refreshProducts = document.getElementById('refreshProducts');
+  const waOrder = document.getElementById('waOrder');
+  const year = document.getElementById('year');
+  const heroImg = document.getElementById('heroImg');
+
+  year.textContent = new Date().getFullYear();
+
+  // WhatsApp button default (owner phone placeholder)
+  const ownerPhone = "+919812345678"; // replace or set via admin later if you add config
+  waOrder.href = "https://wa.me/" + ownerPhone.replace(/\D/g, '');
+
+  // Open admin panel
+  openAdminBtn.addEventListener('click', () => adminPanel.style.display = 'block');
+  closeAdmin.addEventListener('click', () => adminPanel.style.display = 'none');
+
+  // Create admin (one-time) - uses Firebase Auth createUserWithEmailAndPassword
+  createBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    authMsg.textContent = "Creating admin...";
+    try {
+      const userCred = await auth.createUserWithEmailAndPassword(adminEmail.value.trim(), adminPassword.value);
+      authMsg.textContent = "Admin created. Now log in.";
+    } catch (err) {
+      authMsg.textContent = "Create admin error: " + err.message;
+    }
+  });
+
+  // Login
+  loginBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    authMsg.textContent = "Signing in...";
+    try {
+      await auth.signInWithEmailAndPassword(adminEmail.value.trim(), adminPassword.value);
+      authMsg.textContent = "Signed in.";
+    } catch (err) {
+      authMsg.textContent = "Sign in failed: " + err.message;
+    }
+  });
+
+  // Listen for auth state
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      ownerTools.style.display = 'block';
+      ownerEmailDisplay.textContent = user.email;
+      adminPanel.scrollIntoView({behavior:'smooth'});
+      loadManageList(); // populate manage UI
+    } else {
+      ownerTools.style.display = 'none';
+      ownerEmailDisplay.textContent = '';
+    }
+  });
+
+  /*************  OCR (Tesseract.js) on image select *************/
+  imageInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // show preview
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      preview.src = ev.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    ocrText.value = "Detecting text (OCR) — please wait...";
+    nameEn.value = "";
+    nameHi.value = "";
+    price.value = "";
+
+    try {
+      const worker = Tesseract.createWorker({
+        logger: m => { /* optional progress logging */ }
+      });
+      await worker.load();
+      await worker.loadLanguage('eng+hin');
+      await worker.initialize('eng+hin');
+      const { data: { text } } = await worker.recognize(file);
+      await worker.terminate();
+      const cleaned = (text || "").replace(/\s{2,}/g,' ').trim();
+      ocrText.value = cleaned || "";
+      // Fill english name guess (first line)
+      const firstLine = (cleaned.split('\n').find(l => l.trim()) || "").trim();
+      nameEn.value = firstLine;
+    } catch (err) {
+      ocrText.value = "OCR error: " + err.message;
+    }
+  });
+
+  /*************  Upload image to Firebase Storage and save Firestore doc *************/
+  saveProduct.addEventListener('click', async (e) => {
+    e.preventDefault();
+    ownerMsg.textContent = "Uploading...";
+
+    const file = imageInput.files[0];
+    if (!file) { ownerMsg.textContent = "Please choose an image."; return; }
+    const safeNameEn = nameEn.value.trim();
+    if (!safeNameEn) { ownerMsg.textContent = "Please enter an English name."; return; }
+    const priceNum = Number(price.value);
+    if (isNaN(priceNum)) { ownerMsg.textContent = "Please enter a valid price."; return; }
+
+    try {
+      // upload
+      const storageRef = storage.ref().child('product_images/' + Date.now() + '_' + file.name);
+      const snap = await storageRef.put(file);
+      const url = await snap.ref.getDownloadURL();
+
+      // save to products collection
+      const docRef = await db.collection('products').add({
+        imageURL: url,
+        name_en: safeNameEn,
+        name_hi: nameHi.value.trim() || "",
+        price: priceNum,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        sort: Date.now()
+      });
+
+      ownerMsg.textContent = "Saved product.";
+      // clear inputs
+      imageInput.value = "";
+      preview.src = ""; preview.style.display = 'none';
+      ocrText.value = ""; nameEn.value = ""; nameHi.value = ""; price.value = "";
+      // refresh product list managed UI
+      loadManageList();
+    } catch (err) {
+      ownerMsg.textContent = "Save error: " + err.message;
+    }
+  });
+
+  /*************  Real-time product loading for visitors  *************/
+  function renderProducts(arr) {
+    productsDiv.innerHTML = '';
+    if (!arr.length) {
+      noProducts.style.display = 'block';
+      return;
+    }
+    noProducts.style.display = 'none';
+    arr.forEach(doc => {
+      const p = doc;
+      const el = document.createElement('article');
+      el.className = 'product';
+      el.innerHTML = `
+        <img src="${escapeHtml(p.imageURL||'')}" alt="${escapeHtml(p.name_en||'product')}">
+        <div class="p-body">
+          <div class="names">
+            <div class="ename">${escapeHtml(p.name_en || '')}</div>
+            <div class="hindi">${escapeHtml(p.name_hi || '')}</div>
+          </div>
+          <div class="price">₹${Number(p.price||0).toFixed(0)}</div>
+        </div>
+      `;
+      productsDiv.appendChild(el);
+    });
+  }
+
+  // snapshot listener
+  db.collection('products').orderBy('sort','asc').onSnapshot(snapshot => {
+    const arr = [];
+    snapshot.forEach(snap => {
+      arr.push({ id: snap.id, ...snap.data() });
+    });
+    renderProducts(arr);
+  }, err => {
+    console.error("Error listening products:", err);
+  });
+
+  /*************  Manage existing items for owner (edit price) *************/
+  async function loadManageList() {
+    manageList.innerHTML = "Loading...";
+    try {
+      const snapshot = await db.collection('products').orderBy('sort','asc').get();
+      manageList.innerHTML = '';
+      snapshot.forEach(doc => {
+        const p = { id: doc.id, ...doc.data() };
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.gap = '8px';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.border = '1px solid #eef7ef';
+        wrapper.style.padding = '8px';
+        wrapper.style.borderRadius = '10px';
+        wrapper.innerHTML = `
+          <img src="${escapeHtml(p.imageURL)}" style="width:72px;height:56px;object-fit:cover;border-radius:8px" />
+          <div style="flex:1">
+            <div style="font-weight:700">${escapeHtml(p.name_en)} <span style="color:#16663a">(${escapeHtml(p.name_hi||'')})</span></div>
+            <div class="small">id: ${p.id}</div>
+          </div>
+          <input type="number" value="${Number(p.price||0).toFixed(2)}" style="width:90px;padding:6px;border-radius:8px;border:1px solid #eee" />
+          <button class="btn">Save</button>
+        `;
+        // save handler
+        const input = wrapper.querySelector('input');
+        const btn = wrapper.querySelector('button');
+        btn.addEventListener('click', async () => {
+          const newPrice = Number(input.value);
+          if (isNaN(newPrice)) return alert('Enter valid price');
+          btn.textContent = 'Saving...';
+          try {
+            await db.collection('products').doc(p.id).update({ price: newPrice });
+            btn.textContent = 'Saved';
+            setTimeout(()=>btn.textContent='Save', 1200);
+          } catch (err) {
+            alert('Update failed: ' + err.message);
+            btn.textContent = 'Save';
+          }
+        });
+        manageList.appendChild(wrapper);
+      });
+      if (!snapshot.size) manageList.innerHTML = '<div class="small">No products yet.</div>';
+    } catch (err) {
+      manageList.innerHTML = 'Error loading list: ' + err.message;
+    }
+  }
+
+  refreshProducts.addEventListener('click', () => loadManageList());
+
+  // utility escape
+  function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m] }) }
+
+  // Helpful hint: exposed / simple sign-out
+  // (owner can sign out by clicking Create Admin again or just close panel and refresh)
+  // Optionally add explicit sign-out:
+  // auth.signOut();
+
+  // END
+  </script>
+</body>
+</html>
